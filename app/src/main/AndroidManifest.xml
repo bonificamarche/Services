@@ -12,39 +12,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Services">
 
-        <activity android:name=".MainActivity" />
-
-        <receiver
-            android:name=".receivers.AutostartReceiver"
-            android:enabled="true"
-            android:label="Autostart Receiver"
-            android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
-            <intent-filter>
-                <category android:name="android.intent.category.LAUNCHER" />
-
-                <!-- User has finished booting -->
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-
-                <!-- User has finished booting, but while still in the locked state -->
-                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
-
-                <!-- User has finished a restart or rebooting -->
-                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
-
-                <action android:name="android.intent.action.REBOOT" />
-            </intent-filter>
-        </receiver>
-
-        <service
-            android:name=".services.PhotoService"
-            android:enabled="true"
-            android:exported="false"
-            android:label="Photo Service">
-            <intent-filter>
-                <action android:name="it.bonificamarche.services" />
-            </intent-filter>
-        </service>
-
         <service
             android:name=".services.RemoteService"
             android:exported="false">
