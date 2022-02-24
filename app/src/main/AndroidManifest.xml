@@ -16,8 +16,8 @@
 
         <receiver
             android:name=".receivers.AutostartReceiver"
-            android:label="Autostart Receiver"
             android:enabled="true"
+            android:label="Autostart Receiver"
             android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
             <intent-filter>
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -31,7 +31,7 @@
                 <!-- User has finished a restart or rebooting -->
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
 
-                <action android:name="android.intent.action.REBOOT"/>
+                <action android:name="android.intent.action.REBOOT" />
             </intent-filter>
         </receiver>
 
@@ -42,6 +42,14 @@
             android:label="Photo Service">
             <intent-filter>
                 <action android:name="it.bonificamarche.services" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".services.RemoteService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="aidl-connection" />
             </intent-filter>
         </service>
     </application>
