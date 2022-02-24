@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="it.bonificamarche.services">
+
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Services">
+
+        <activity android:name=".MainActivity" />
+
+        <receiver
+            android:name=".receivers.AutostartReceiver"
+            android:label="Autostart Receiver"
+            android:enabled="true"
+            android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
+            <intent-filter>
+                <category android:name="android.intent.category.LAUNCHER" />
+
+                <!-- User has finished booting -->
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+
+                <!-- User has finished booting, but while still in the locked state -->
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+
+                <!-- User has finished a restart or rebooting -->
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+
+                <action android:name="android.intent.action.REBOOT"/>
+            </intent-filter>
+        </receiver>
+
+        <service
+            android:name=".services.PhotoService"
+            android:enabled="true"
+            android:exported="false"
+            android:label="Photo Service">
+            <intent-filter>
+                <action android:name="it.bonificamarche.services" />
+            </intent-filter>
+        </service>
+    </application>
+</manifest>
