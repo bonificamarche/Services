@@ -11,6 +11,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val service = startService(Intent(this, RemoteService::class.java))
+        startService(Intent(this, RemoteService::class.java))
+        //finish()
     }
 }
