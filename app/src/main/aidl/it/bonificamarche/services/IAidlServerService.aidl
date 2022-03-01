@@ -6,7 +6,7 @@ interface IAidlServerService {
 
     int getPid();
 
-    void sendPhoto(String path);
+    oneway void sendPhoto(String path);
     void notifyClient(String notifyContent);
 
     // Callbacks

@@ -33,7 +33,10 @@ class AidlServerService : Service() {
         }
 
         override fun sendPhoto(path: String) {
-            TODO("Not yet implemented")
+           for(i in 0 until 5){
+               Thread.sleep(2000)
+               notifyClient("Sent photo ${i+1}")
+           }
         }
 
         override fun notifyClient(notifyContent: String) {
@@ -41,7 +44,7 @@ class AidlServerService : Service() {
 
             for (i in 0 until callbacks.registeredCallbackCount) {
                 val cb: IAidlServerServiceCallback = callbacks.getBroadcastItem(i)
-                cb.sendMsg("$i msg from Server is: $notifyContent")
+                cb.sendMsg(notifyContent)
             }
 
             callbacks.finishBroadcast()
