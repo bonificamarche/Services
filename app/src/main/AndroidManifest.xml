@@ -29,7 +29,7 @@
             </intent-filter>
         </receiver>
 
-        <service android:name=".services.RemoteService">
+        <service android:name=".services.AidlServerService">
             <intent-filter>
                 <action android:name="aidl-connection" />
                 <category android:name="android.intent.category.DEFAULT"/>
