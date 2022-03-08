@@ -8,7 +8,8 @@ import android.os.RemoteCallbackList
 import android.util.Log
 import it.bonificamarche.services.IAidlServerService
 import it.bonificamarche.services.IAidlServerServiceCallback
-
+import it.bonificamarche.services.Photo
+import it.bonificamarche.services.Transmission
 
 class AidlServerService : Service() {
 
@@ -33,10 +34,12 @@ class AidlServerService : Service() {
         }
 
         override fun sendPhoto(path: String) {
-           for(i in 0 until 5){
-               Thread.sleep(2000)
-               notifyClient("Sent photo ${i+1}")
-           }
+            show("*** New call. Send photo!")
+
+            for (i in 0 until 5) {
+                Thread.sleep(2000)
+                notifyClient("Sent photo ${i + 1}")
+            }
         }
 
         override fun notifyClient(notifyContent: String) {
@@ -44,7 +47,10 @@ class AidlServerService : Service() {
 
             for (i in 0 until callbacks.registeredCallbackCount) {
                 val cb: IAidlServerServiceCallback = callbacks.getBroadcastItem(i)
-                cb.sendMsg(notifyContent)
+
+                val transmission = Transmission("", 0, 0)
+                val photo = Photo(notifyContent, "")
+                cb.sendStatusTransmissionPhoto(transmission, photo)
             }
 
             callbacks.finishBroadcast()
