@@ -3,19 +3,23 @@
     package="it.bonificamarche.services">
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
         android:installLocation="internalOnly"
+        android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Services">
-
-        <activity android:name=".MainActivity" >
+        <activity android:name=".StartExternalApplication" />
+        <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -32,8 +36,16 @@
         <service android:name=".services.AidlServerService">
             <intent-filter>
                 <action android:name="aidl-connection" />
-                <category android:name="android.intent.category.DEFAULT"/>
+
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </service>
+        <service
+            android:name=".services.TimerService"
+            android:exported="false" />
+        <service
+            android:name=".services.ForegroundPhotoService"
+            android:exported="false" />
     </application>
+
 </manifest>
