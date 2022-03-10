@@ -10,9 +10,12 @@ import androidx.core.app.NotificationCompat
 import it.bonificamarche.services.R
 import it.bonificamarche.services.StartExternalApplication
 import it.bonificamarche.services.common.show
+import java.util.*
 
 
 class ForegroundPhotoService : Service() {
+
+    private var appName : String? = null
 
     override fun onBind(intent: Intent): IBinder? {
         return null
@@ -20,6 +23,9 @@ class ForegroundPhotoService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
+
+        val bundle = intent?.extras
+        appName = bundle?.getString(getString(R.string.AppName))
 
         createChannelNotification()
         startNoticeService()
@@ -59,7 +65,7 @@ class ForegroundPhotoService : Service() {
         val vibrate = longArrayOf(100, 200, 300, 400, 500, 400, 300, 200, 400)
 
         val notificationIntent = Intent(applicationContext, StartExternalApplication::class.java)
-        notificationIntent.putExtra("package", "it.bonificamarche.colture")
+        notificationIntent.putExtra("package", "it.bonificamarche.${appName?.toLowerCase(Locale.ROOT)}")
         notificationIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
 
         val contentIntent = PendingIntent.getActivity(
@@ -72,7 +78,7 @@ class ForegroundPhotoService : Service() {
         val notification =
             NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("Foto da inviare")
-                .setContentText("Ci sono foto da inviare!")
+                .setContentText("Ci sono foto da inviare nell'app ${appName}!")
                 .setSmallIcon(R.drawable.warning)
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_MAX)

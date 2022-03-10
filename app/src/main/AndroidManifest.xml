@@ -41,7 +41,7 @@
             </intent-filter>
         </service>
         <service
-            android:name=".services.CheckPhotoService"
+            android:name=".services.TimerService"
             android:exported="false" />
         <service
             android:name=".services.ForegroundPhotoService"

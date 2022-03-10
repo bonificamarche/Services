@@ -9,7 +9,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import it.bonificamarche.services.common.show
-import it.bonificamarche.services.services.CheckPhotoService
+import it.bonificamarche.services.services.TimerService
 import it.bonificamarche.services.services.RemoteService
 
 
@@ -37,7 +37,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun startServices() {
         startService(Intent(this, RemoteService::class.java))
-        startService(Intent(this, CheckPhotoService::class.java))
+        startService(Intent(this, TimerService::class.java))
         finish()
     }
 
