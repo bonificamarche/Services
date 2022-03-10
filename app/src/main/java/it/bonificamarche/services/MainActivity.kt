@@ -11,6 +11,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import it.bonificamarche.services.common.show
 import it.bonificamarche.services.services.TimerService
 import it.bonificamarche.services.services.RemoteService
+import it.bonificamarche.services.services.AidlServerService
 
 
 class MainActivity : AppCompatActivity() {
@@ -36,7 +37,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startServices() {
-        startService(Intent(this, RemoteService::class.java))
+        startService(Intent(this, AidlServerService::class.java))
         startService(Intent(this, TimerService::class.java))
         finish()
     }
