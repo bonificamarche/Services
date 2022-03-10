@@ -53,7 +53,7 @@ open class CheckPhotoService : Service() {
 
         val dateToCheck = currentDate()
 
-        val imgToSend = findPhotoToSend(this)
+        val imgToSend = findPhotoToSend("Colture")
         if (showLog) show(TAG, "Check photo in progress... Found: $imgToSend")
 
         if (flagForegroundServiceIsRunning) {
@@ -65,9 +65,9 @@ open class CheckPhotoService : Service() {
             flagForegroundServiceIsRunning = false
         }
 
-        if (currentDate == dateToCheck) { // TODO Check this
+        if (currentDate == dateToCheck) {
 
-            if (imgToSend == 0) {
+            if (imgToSend > 0) {
 
                 val currentHour = currentHour().substring(0, 2).toInt()
                 val currentMinutes = currentHour().substring(2, 4).toInt()
@@ -90,8 +90,8 @@ open class CheckPhotoService : Service() {
     companion object {
 
         private const val PERIOD = 60000L
-        private const val NOTICE_HOUR = "11"
-        private const val NOTICE_MINUTE = "52"
+        private const val NOTICE_HOUR = "08"
+        private const val NOTICE_MINUTE = "05"
 
         // Logging
         const val TAG = "Check Photo Service"

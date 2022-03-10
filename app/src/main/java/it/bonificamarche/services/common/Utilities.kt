@@ -1,8 +1,6 @@
 package it.bonificamarche.services.common
 
 import android.annotation.SuppressLint
-import android.content.Context
-import android.os.Environment
 import android.util.Log
 import java.io.File
 import java.text.SimpleDateFormat
@@ -18,7 +16,7 @@ const val PATTER_HOUR = "HHmmss"
 /**
  * Used for the logging.
  */
-val show = { TAG: String, log: String ->
+val show = { TAG: String, log: Any ->
     Log.e(TAG, "[$TAG] $log")
 }
 
@@ -64,17 +62,9 @@ fun addOneDay(date: Int): Int {
  * Find photos to send to the server.
  * @return number of photos to send.
  */
-fun findPhotoToSend(context : Context): Int {
+fun findPhotoToSend(appName: String): Int {
 
-    // TODO not word. Images not found!
-
-    //val storageDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
-    val path = "/storage/emulated/0/Android/data/it.bonificamarche.colture/files/Pictures/Colture"
-    //val NAME_IMAGES_DIRECTORY = "Colture"
-    //val imagesDir = File("$storageDir/$NAME_IMAGES_DIRECTORY/")
-    val imagesDir = File(path)
-
-    show("Fun find photo", "Path: $imagesDir")
+    val imagesDir = File("/storage/emulated/0/Pictures/${appName}/")
     var counterImg = 0
 
     if (imagesDir.exists() && imagesDir.isDirectory) {
