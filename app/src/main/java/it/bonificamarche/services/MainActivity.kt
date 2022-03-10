@@ -10,7 +10,6 @@ import androidx.core.content.ContextCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import it.bonificamarche.services.common.show
 import it.bonificamarche.services.services.TimerService
-import it.bonificamarche.services.services.RemoteService
 import it.bonificamarche.services.services.AidlServerService
 
 
