@@ -35,9 +35,16 @@ class MainActivity : AppCompatActivity() {
         } else startServices()
     }
 
+    /**
+     * Start service when the permission is granted.
+     */
     private fun startServices() {
+        // Aidl Server service
         startService(Intent(this, AidlServerService::class.java))
+
+        // Time service
         startService(Intent(this, TimerService::class.java))
+
         finish()
     }
 
