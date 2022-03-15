@@ -7,8 +7,9 @@ import android.os.RemoteCallbackList
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import it.bonificamarche.services.*
 import it.bonificamarche.services.common.show
-import it.bonificamarche.services.services.AidlServerService
+import it.bonificamarche.services.services.Actions
 import it.bonificamarche.services.services.MainService
+import java.lang.Exception
 
 class AidlServerServiceImpl(private val context : Context) : IAidlServerService.Stub() {
 
@@ -19,16 +20,25 @@ class AidlServerServiceImpl(private val context : Context) : IAidlServerService.
     private val callbacks: RemoteCallbackList<IAidlServerServiceCallback> =
         RemoteCallbackList<IAidlServerServiceCallback>()
 
+    /**
+     * Like the on create function.
+     */
     fun initialization() {
 
+        // Main Service
         Intent(context, MainService::class.java).also { intent ->
             context.bindService(intent, connectionMainService, Context.BIND_AUTO_CREATE)
         }
 
+        // Local Broadcast receiver to communicate
         LocalBroadcastManager.getInstance(context)
-            .registerReceiver(communicationServicesReceiver, IntentFilter(context.getString(R.string.communication)))
+            .registerReceiver(aidlServerReceiver,
+                IntentFilter(context.getString(R.string.communicationFromMainServiceToAidlServerService)))
     }
 
+    /**
+     * Like the on destroy function.
+     */
     fun destroyResources(){
         if (boundMainService) {
             context.unbindService(connectionMainService)
@@ -36,6 +46,9 @@ class AidlServerServiceImpl(private val context : Context) : IAidlServerService.
         }
     }
 
+    /**
+     * Implement a service connection to connect with the main service.
+     */
     private val connectionMainService: ServiceConnection = object : ServiceConnection {
 
         override fun onServiceConnected(name: ComponentName, service: IBinder) {
@@ -64,11 +77,7 @@ class AidlServerServiceImpl(private val context : Context) : IAidlServerService.
 
     override fun sendPhoto(path: String) {
         show(TAG, "*** New call. Send photo!")
-
-        for (i in 0 until 5) {
-            Thread.sleep(2000)
-            notifyClient("Sent photo ${i + 1}")
-        }
+        sendMessageToMainService(Actions.SEND_PHOTO)
     }
 
     override fun notifyClient(notifyContent: String) {
@@ -96,14 +105,33 @@ class AidlServerServiceImpl(private val context : Context) : IAidlServerService.
     }
 
     /**
-     * Local receiver to communicate between aidl server and main service.
+     * Local receiver to communicate from main service to aidl server service.
      */
-    private val communicationServicesReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+    private val aidlServerReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val bundle = intent.extras
-            val message = bundle?.getString(context.getString(R.string.message))
-            show(TAG, "Received message: $message from main service")
+            val action = intent.getSerializableExtra(context.getString(R.string.action)) as Actions
+            val message = bundle?.getString(context.getString(R.string.message))!!
+            show(TAG, "[Main Service --> AIDL Server] Action: $action, message: $message")
+
+            when(action){
+                Actions.NOTIFY_CLIENTS -> notifyClient(message)
+                else -> throw Exception("Actions not implemented!")
+            }
         }
+    }
+
+    /**
+     * Call this function when the aidl server needs to communicate with the main service.
+     * @param message: content of the message.
+     */
+    private fun sendMessageToMainService(action: Actions, message : String = "") {
+        val intent = Intent(context.getString(R.string.communicationFromAidlServerServiceToMainService))
+        intent.putExtra(context.getString(R.string.action), action)
+        intent.putExtra(context.getString(R.string.message), message)
+        show(TAG, "[AIDL Server --> Main Service] Action: $action, message: $message.")
+
+        LocalBroadcastManager.getInstance(context).sendBroadcast(intent)
     }
 
     companion object {

@@ -3,7 +3,9 @@
     <string name="AppName">AppName</string>
     <string name="error">Errore</string>
     <string name="attention">Attenzione</string>
-    <string name="communication">Comunicazione tra aidl server e main services</string>
+    <string name="communicationFromMainServiceToAidlServerService">Comunicazione da main service a aidl server service</string>
+    <string name="communicationFromAidlServerServiceToMainService">Comunicazione da aidl server service a main service</string>
     <string name="ok">OK</string>
     <string name="message">Messaggio</string>
+    <string name="action">Azione</string>
 </resources>

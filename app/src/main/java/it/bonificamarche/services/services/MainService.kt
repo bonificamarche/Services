@@ -1,14 +1,17 @@
 package it.bonificamarche.services.services
 
 import android.app.Service
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Binder
 import android.os.IBinder
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import it.bonificamarche.services.R
 import it.bonificamarche.services.common.*
+import java.lang.Exception
 import java.util.*
-import kotlin.math.min
 
 open class MainService : Service() {
 
@@ -28,13 +31,24 @@ open class MainService : Service() {
         return binder
     }
 
+    override fun onCreate() {
+        super.onCreate()
+
+        foregroundPhotoService = ForegroundPhotoService()
+
+        // Local Broadcast receiver to communicate
+        LocalBroadcastManager.getInstance(this)
+            .registerReceiver(
+                mainServiceReceiver,
+                IntentFilter(getString(R.string.communicationFromAidlServerServiceToMainService))
+            )
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         show(TAG, "Started!")
 
-        foregroundPhotoService = ForegroundPhotoService()
         startTimer()
-
         return START_STICKY
     }
 
@@ -84,19 +98,19 @@ open class MainService : Service() {
     /**
      * Check if the conditions are successfully to notice the notify.
      */
-    private fun checkNoticePhoto(appName : String) {
+    private fun checkNoticePhoto(appName: String) {
 
         val dateToCheck = getParsedDate(getLocalDate())
         val imgToSend = findPhotoToSend(appName)
         if (verbose) show(TAG, "[Check Photo] in progress... Found: $imgToSend")
 
-        if (compareDate(currentDate,  dateToCheck)) {
+        if (compareDate(currentDate, dateToCheck)) {
 
             if (imgToSend > 0) {
 
                 if (verbose) show(TAG, "[Check Photo] There are photos to send.!")
 
-                if(!flagForegroundServiceIsRunning) {
+                if (!flagForegroundServiceIsRunning) {
                     // Start services
                     val intent = Intent(this, foregroundPhotoService::class.java)
                     intent.putExtra(getString(R.string.AppName), appName)
@@ -106,17 +120,51 @@ open class MainService : Service() {
                     flagForegroundServiceIsRunning = true
                 }
             }
-        } else if (verbose) show(TAG, "[Check Photo] Wait new date... for check photo. Current is $currentDate and check is $dateToCheck")
+        } else if (verbose) show(
+            TAG,
+            "[Check Photo] Wait new date... for check photo. Current is $currentDate and check is $dateToCheck"
+        )
+    }
+
+    /**
+     * Send photo to remote server.
+     * @param path: path of the root folder that contains the photos to be sent.
+     */
+    private fun sendPhotoToRemoteServer(path : String) {
+        for (i in 0 until 5) {
+            Thread.sleep(2000)
+            sendMessageToAidlServer(Actions.NOTIFY_CLIENTS, "Sent photo ${i + 1}")
+        }
+    }
+
+    /**
+     * Local receiver to communicate from aidl server service to main service.
+     */
+    private val mainServiceReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val bundle = intent.extras
+            val action = intent.getSerializableExtra(context.getString(R.string.action)) as Actions
+            val message = bundle?.getString(context.getString(R.string.message))!!
+            show(TAG, "[AIDL Server --> Main Service] Action: $action, message: $message.")
+
+            when (action) {
+                Actions.SEND_PHOTO -> {
+                    sendPhotoToRemoteServer(message)
+                }
+                else -> throw Exception("Actions not implemented!")
+            }
+        }
     }
 
     /**
      * Call this function when the main service needs to communicate with the server service.
      * @param message: content of the message.
      */
-    private fun communicateWithServer(message : String){
-        val intent = Intent(getString(R.string.communication))
+    private fun sendMessageToAidlServer(action: Actions, message: String = "") {
+        val intent = Intent(getString(R.string.communicationFromMainServiceToAidlServerService))
+        intent.putExtra(getString(R.string.action), action)
         intent.putExtra(getString(R.string.message), message)
-        show(TAG, "Send message ($message) to the aidl server service")
+        show(TAG, "[Main Service --> AIDL Server]  Action: $action, message: $message")
 
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
