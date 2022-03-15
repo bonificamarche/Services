@@ -2,5 +2,8 @@
     <string name="app_name">Services</string>
     <string name="AppName">AppName</string>
     <string name="error">Errore</string>
+    <string name="attention">Attenzione</string>
+    <string name="communication">Comunicazione tra aidl server e main services</string>
     <string name="ok">OK</string>
+    <string name="message">Messaggio</string>
 </resources>

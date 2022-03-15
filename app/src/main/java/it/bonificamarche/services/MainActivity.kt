@@ -9,7 +9,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import it.bonificamarche.services.common.show
-import it.bonificamarche.services.services.TimerService
 import it.bonificamarche.services.services.AidlServerService
 
 
@@ -32,19 +31,14 @@ class MainActivity : AppCompatActivity() {
                 Manifest.permission.WRITE_EXTERNAL_STORAGE
             )
             storageLauncher.launch(permission)
-        } else startServices()
+        } else startAidlService()
     }
 
     /**
      * Start service when the permission is granted.
      */
-    private fun startServices() {
-        // Aidl Server service
+    private fun startAidlService() {
         startService(Intent(this, AidlServerService::class.java))
-
-        // Time service
-        startService(Intent(this, TimerService::class.java))
-
         finish()
     }
 
@@ -59,14 +53,14 @@ class MainActivity : AppCompatActivity() {
 
             if (granted) {
                 show(TAG, "Permission granted!")
-                startServices()
+                startAidlService()
             } else {
                 show(TAG, "Permission denied!")
 
                 MaterialAlertDialogBuilder(this)
-                    .setTitle("Attenzione")
+                    .setTitle(R.string.attention)
                     .setMessage("Devi accettare i permessi per permettere all'app di accedere alla memoria.")
-                    .setPositiveButton("Ok") { _, _ ->
+                    .setPositiveButton(R.string.ok) { _, _ ->
                         finish()
                     }
                     .show()

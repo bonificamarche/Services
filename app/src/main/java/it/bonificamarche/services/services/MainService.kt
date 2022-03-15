@@ -2,12 +2,17 @@ package it.bonificamarche.services.services
 
 import android.app.Service
 import android.content.Intent
+import android.os.Binder
 import android.os.IBinder
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import it.bonificamarche.services.R
 import it.bonificamarche.services.common.*
 import java.util.*
+import kotlin.math.min
 
-open class TimerService : Service() {
+open class MainService : Service() {
+
+    private val binder = LocalBinder()
 
     private var timer: Timer? = null
     var currentDate: String = getParsedDate(getLocalDate())
@@ -15,15 +20,21 @@ open class TimerService : Service() {
     private lateinit var foregroundPhotoService: ForegroundPhotoService
     private var flagForegroundServiceIsRunning = false
 
+    inner class LocalBinder : Binder() {
+        fun getService(): MainService = this@MainService
+    }
+
     override fun onBind(intent: Intent): IBinder? {
-        return null
+        return binder
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        foregroundPhotoService = ForegroundPhotoService()
+        show(TAG, "Started!")
 
+        foregroundPhotoService = ForegroundPhotoService()
         startTimer()
+
         return START_STICKY
     }
 
@@ -32,7 +43,7 @@ open class TimerService : Service() {
      */
     private fun startTimer() {
 
-        if (showLog) show(TAG, "Start timer task!")
+        show(TAG, "[Time Task] Start timer task!")
         val timerTask = object : TimerTask() {
 
             override fun run() {
@@ -40,7 +51,7 @@ open class TimerService : Service() {
                 val localDateTime = getLocalDateTime()
                 val hour = localDateTime.hour
                 val minute = localDateTime.minute
-                show(TAG, "Hour: $hour, minute: $minute")
+                show(TAG, "[Time Task] Hour: $hour, minute: $minute")
 
                 when (hour) {
                     NOTICE_HOUR_PHOTO -> {
@@ -77,25 +88,37 @@ open class TimerService : Service() {
 
         val dateToCheck = getParsedDate(getLocalDate())
         val imgToSend = findPhotoToSend(appName)
-        if (showLog) show(TAG, "Check photo in progress... Found: $imgToSend")
+        if (verbose) show(TAG, "[Check Photo] in progress... Found: $imgToSend")
 
         if (compareDate(currentDate,  dateToCheck)) {
 
             if (imgToSend > 0) {
 
-                if (showLog) show(TAG, "There are photos to send.!")
+                if (verbose) show(TAG, "[Check Photo] There are photos to send.!")
 
                 if(!flagForegroundServiceIsRunning) {
                     // Start services
                     val intent = Intent(this, foregroundPhotoService::class.java)
                     intent.putExtra(getString(R.string.AppName), appName)
 
-                    show(TAG, "Foreground service starting...")
+                    show(TAG, "[Check Photo] Foreground service starting...")
                     startService(intent)
                     flagForegroundServiceIsRunning = true
                 }
             }
-        } else if (showLog) show(TAG, "Wait new date... for check photo. Current is $currentDate and check is $dateToCheck")
+        } else if (verbose) show(TAG, "[Check Photo] Wait new date... for check photo. Current is $currentDate and check is $dateToCheck")
+    }
+
+    /**
+     * Call this function when the main service needs to communicate with the server service.
+     * @param message: content of the message.
+     */
+    private fun communicateWithServer(message : String){
+        val intent = Intent(getString(R.string.communication))
+        intent.putExtra(getString(R.string.message), message)
+        show(TAG, "Send message ($message) to the aidl server service")
+
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
     companion object {
@@ -111,7 +134,7 @@ open class TimerService : Service() {
         const val APP_NAME_IRRIGAZIONE = "Irrigazione"
 
         // Logging
-        const val TAG = "Timer Service"
-        const val showLog = true
+        const val TAG = "Main Service"
+        const val verbose = true
     }
 }
