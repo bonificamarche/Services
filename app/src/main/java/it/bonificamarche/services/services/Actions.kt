@@ -1,5 +1,5 @@
 package it.bonificamarche.services.services
 
 enum class Actions {
-    SEND_PHOTO, NOTIFY_CLIENTS
+    START_SEND_PHOTO, STOP_SEND_PHOTO, NOTIFY_PHOTO_SENT
 }

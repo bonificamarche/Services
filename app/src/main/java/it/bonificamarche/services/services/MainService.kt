@@ -21,7 +21,9 @@ open class MainService : Service() {
     var currentDate: String = getParsedDate(getLocalDate())
 
     private lateinit var foregroundPhotoService: ForegroundPhotoService
-    private var flagForegroundServiceIsRunning = false
+    private var foregroundServiceIsRunning = false
+
+    private var sendPhotoInRunning = false
 
     inner class LocalBinder : Binder() {
         fun getService(): MainService = this@MainService
@@ -110,14 +112,14 @@ open class MainService : Service() {
 
                 if (verbose) show(TAG, "[Check Photo] There are photos to send.!")
 
-                if (!flagForegroundServiceIsRunning) {
+                if (!foregroundServiceIsRunning) {
                     // Start services
                     val intent = Intent(this, foregroundPhotoService::class.java)
                     intent.putExtra(getString(R.string.AppName), appName)
 
                     show(TAG, "[Check Photo] Foreground service starting...")
                     startService(intent)
-                    flagForegroundServiceIsRunning = true
+                    foregroundServiceIsRunning = true
                 }
             }
         } else if (verbose) show(
@@ -131,9 +133,11 @@ open class MainService : Service() {
      * @param path: path of the root folder that contains the photos to be sent.
      */
     private fun sendPhotoToRemoteServer(path : String) {
-        for (i in 0 until 5) {
-            Thread.sleep(2000)
-            sendMessageToAidlServer(Actions.NOTIFY_CLIENTS, "Sent photo ${i + 1}")
+        sendPhotoInRunning = true
+        for (i in 0 until 20) {
+            if(sendPhotoInRunning) {
+                sendMessageToAidlServer(Actions.NOTIFY_PHOTO_SENT, "Sent photo ${i + 1}")
+            }
         }
     }
 
@@ -145,11 +149,14 @@ open class MainService : Service() {
             val bundle = intent.extras
             val action = intent.getSerializableExtra(context.getString(R.string.action)) as Actions
             val message = bundle?.getString(context.getString(R.string.message))!!
-            show(TAG, "[AIDL Server --> Main Service] Action: $action, message: $message.")
+            show(TAG, "[AIDL Server --> Main Service] Received Action: $action, message: $message")
 
             when (action) {
-                Actions.SEND_PHOTO -> {
+                Actions.START_SEND_PHOTO -> {
                     sendPhotoToRemoteServer(message)
+                }
+                Actions.STOP_SEND_PHOTO -> {
+                    sendPhotoInRunning = false
                 }
                 else -> throw Exception("Actions not implemented!")
             }
@@ -159,6 +166,7 @@ open class MainService : Service() {
     /**
      * Call this function when the main service needs to communicate with the server service.
      * @param message: content of the message.
+     * @param action: action to run.
      */
     private fun sendMessageToAidlServer(action: Actions, message: String = "") {
         val intent = Intent(getString(R.string.communicationFromMainServiceToAidlServerService))

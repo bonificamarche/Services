@@ -42,7 +42,7 @@ class Photo(
 /**
  * Transmission parcelable.
  */
-data class Transmission(
+class Transmission(
     val src: String?,
     val photoToBeTransmitted: Int,
     val photoTransmitted: Int
