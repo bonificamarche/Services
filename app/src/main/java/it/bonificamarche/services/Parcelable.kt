@@ -7,8 +7,8 @@ import android.os.Parcelable
  * Photo parcelable.
  */
 class Photo(
-    private val name: String?,
-    private val fullName: String?
+    val name: String?,
+    val fullName: String?
 ) : Parcelable {
 
     private constructor(parcel: Parcel) : this(
@@ -45,7 +45,7 @@ class Photo(
 class Transmission(
     val src: String?,
     val photoToBeTransmitted: Int,
-    val photoTransmitted: Int
+    var photoTransmitted: Int
 ) : Parcelable {
 
     constructor(parcel: Parcel) : this(

@@ -8,4 +8,9 @@
     <string name="ok">OK</string>
     <string name="message">Messaggio</string>
     <string name="action">Azione</string>
+    <string name="transmission">Trasmissione</string>
+    <string name="photo">Foto</string>
+    <string name="id_user">IdUserServer</string>
+    <string name="kk">ce32733d7e922de903738b2649d55ecc</string>
+    <string name="ks">ce32733d7e922de903738b2649d55ecc</string>
 </resources>
