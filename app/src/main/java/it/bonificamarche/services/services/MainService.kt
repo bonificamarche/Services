@@ -1,5 +1,6 @@
 package it.bonificamarche.services.services
 
+import android.annotation.SuppressLint
 import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -8,18 +9,33 @@ import android.content.IntentFilter
 import android.os.Binder
 import android.os.IBinder
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.schedulers.Schedulers
+import it.bonificamarche.services.Photo
 import it.bonificamarche.services.R
+import it.bonificamarche.services.Transmission
 import it.bonificamarche.services.common.*
-import java.lang.Exception
+import java.io.File
 import java.util.*
 
 open class MainService : Service() {
 
     private val binder = LocalBinder()
 
+    // Asynchronous requests
+    private val apiService by lazy {
+        ApiServices.create("https://webserv.bonificamarche.it")
+    }
+
+    private val apiServiceResizeImage by lazy {
+        ApiServices.create("https://cdn.bonificamarche.it")
+    }
+
+    // Timer
     private var timer: Timer? = null
     var currentDate: String = getParsedDate(getLocalDate())
 
+    // Foreground photo
     private lateinit var foregroundPhotoService: ForegroundPhotoService
     private var foregroundServiceIsRunning = false
 
@@ -130,14 +146,116 @@ open class MainService : Service() {
 
     /**
      * Send photo to remote server.
+     * @param idUser: id user server to sent photo.
      * @param path: path of the root folder that contains the photos to be sent.
      */
-    private fun sendPhotoToRemoteServer(path : String) {
-        sendPhotoInRunning = true
-        for (i in 0 until 20) {
-            if(sendPhotoInRunning) {
-                sendMessageToAidlServer(Actions.NOTIFY_PHOTO_SENT, "Sent photo ${i + 1}")
+    private fun sendPhotoToRemoteServer(idUser: Int, path: String) {
+
+        val folder = File(path)
+        if (folder.exists() && folder.isDirectory) {
+
+            val photoToTransmit = folder.listFiles()!!.size
+            val transmission = Transmission(path, photoToTransmit, 0)
+            folder.listFiles()?.forEachIndexed { index, file ->
+
+                if (index == 0) sendPhotoInRunning = true   // Start transmission
+
+                if (sendPhotoInRunning) {
+                    val photo = Photo(file.name, file.absolutePath)
+                    if (verbose) show(TAG, "Encoding.....")
+                    val encodedPhoto = encodePhoto(photo.fullName!!)
+
+                    if (verbose) show(TAG, "Photo encoded! Start to upload.")
+                    uploadPhoto(idUser, encodedPhoto, transmission, photo)
+                }
             }
+        }
+    }
+
+    /**
+     * Upload photo to the server.
+     * @param idUser: id user server to sent photo.
+     * @param encoded: photo in base64 to upload.
+     * @param transmission: status of the transmission.
+     * @param photo: current photo to be transmit.
+     */
+    @SuppressLint("CheckResult")
+    private fun uploadPhoto(
+        idUser: Int,
+        encoded: String,
+        transmission: Transmission,
+        photo: Photo
+    ) {
+
+        try {
+            var nameFile = photo.fullName!!.replace(".png", "").substring(1)
+            // TODO Check this when adds new labels photo
+            val typeFile =
+                if (photo.name!!.contains(REAL_ESTATE, ignoreCase = true)) {
+                    val splitting = nameFile.split(REAL_ESTATE)
+                    if(splitting.size > 1) nameFile = splitting[1]
+                    CROP
+                } else UNKNOWN
+
+            // Upload photo to the server
+            if (verbose) show(TAG, "Start upload name: $nameFile, type: $typeFile")
+
+            apiService.uploadPhoto(
+                getString(R.string.kk),
+                getString(R.string.ks),
+                idUser.toString(),
+                typeFile,
+                nameFile,
+                encoded
+            )
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .retry { retryCount, _ -> retryCount < 3 }
+                .subscribe({ json ->
+
+                    val nameFileServer = json.get("file").toString().replace("\"", "")
+                    if (verbose)
+                        show(
+                            TAG, "Result received: $nameFileServer!\nSend request to image resized."
+                        )
+
+                    // Start resizing
+                    if (verbose) show(TAG, "Start resizing...")
+
+                    apiServiceResizeImage.resizeImages(FOLDER_NAME_SERVER, nameFileServer)
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .retry { retryCount, _ -> retryCount < 3 }
+                        .subscribe({
+
+                            if(verbose) show(TAG, "Resize completed!")
+                            transmission.photoTransmitted += 1
+                            sendMessageToAidlServerToNotifyPhoto(
+                                Actions.NOTIFY_PHOTO_SENT, transmission,
+                                photo, "Send photo: ${photo.name}"
+                            )
+                        },
+                            { error ->
+                                show(TAG, "Error in upload photo: ${error.message}")
+                                sendMessageToAidlServerToNotifyPhoto(
+                                    Actions.ERROR_SEND_PHOTO,
+                                    transmission, photo, error.message!!
+                                )
+
+                            })
+                }, { error ->
+                    show(TAG, "Error in upload photo: ${error.message}")
+                    sendMessageToAidlServerToNotifyPhoto(
+                        Actions.ERROR_SEND_PHOTO,
+                        transmission, photo, error.message!!
+                    )
+                })
+        } catch (error: Exception) {
+            show(TAG, "Error in upload photo: ${error.message}")
+            sendMessageToAidlServerToNotifyPhoto(
+                Actions.ERROR_SEND_PHOTO,
+                transmission, photo, error.message!!
+            )
         }
     }
 
@@ -146,16 +264,19 @@ open class MainService : Service() {
      */
     private val mainServiceReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            val bundle = intent.extras
+            val bundle = intent.extras!!
             val action = intent.getSerializableExtra(context.getString(R.string.action)) as Actions
-            val message = bundle?.getString(context.getString(R.string.message))!!
+            val message = bundle.getString(context.getString(R.string.message))!!
+            val idUser = bundle.getInt(context.getString(R.string.id_user))
+
             show(TAG, "[AIDL Server --> Main Service] Received Action: $action, message: $message")
 
             when (action) {
                 Actions.START_SEND_PHOTO -> {
-                    sendPhotoToRemoteServer(message)
+                    sendPhotoToRemoteServer(idUser, message)
                 }
                 Actions.STOP_SEND_PHOTO -> {
+                    show(TAG, "Updated flag sendPhotoInRunning...")
                     sendPhotoInRunning = false
                 }
                 else -> throw Exception("Actions not implemented!")
@@ -164,14 +285,22 @@ open class MainService : Service() {
     }
 
     /**
-     * Call this function when the main service needs to communicate with the server service.
-     * @param message: content of the message.
+     * Call this function when the main service needs to communicate with the server service to notify.
      * @param action: action to run.
+     * @param transmission: transmission status.
+     * @param photo: information on the last photo transmitted.
+     * @param message: content of the message.
+
      */
-    private fun sendMessageToAidlServer(action: Actions, message: String = "") {
+    private fun sendMessageToAidlServerToNotifyPhoto(
+        action: Actions, transmission: Transmission, photo: Photo,
+        message: String = ""
+    ) {
         val intent = Intent(getString(R.string.communicationFromMainServiceToAidlServerService))
         intent.putExtra(getString(R.string.action), action)
         intent.putExtra(getString(R.string.message), message)
+        intent.putExtra(getString(R.string.transmission), transmission)
+        intent.putExtra(getString(R.string.photo), photo)
         show(TAG, "[Main Service --> AIDL Server]  Action: $action, message: $message")
 
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
@@ -188,6 +317,12 @@ open class MainService : Service() {
         // App Name
         const val APP_NAME_COLTURE = "Colture"
         const val APP_NAME_IRRIGAZIONE = "Irrigazione"
+
+        // Upload photo to remote server
+        const val FOLDER_NAME_SERVER = "IT02532390412"
+        const val CROP = "coltura"
+        const val REAL_ESTATE = "Immobile"
+        const val UNKNOWN = "sconosciuto"
 
         // Logging
         const val TAG = "Main Service"
