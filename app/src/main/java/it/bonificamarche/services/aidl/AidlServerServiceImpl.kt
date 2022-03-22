@@ -86,16 +86,22 @@ class AidlServerServiceImpl(private val context: Context) : IAidlServerService.S
         sendMessageToMainService(Actions.STOP_SEND_PHOTO)
     }
 
-    override fun notifyClient(transmission: Transmission, photo: Photo, content: String) {
+    /**
+     * Notify to other clients.
+     * @param action: action to be notified
+     * @param transmission: transmission status
+     * @param photo: information of the transmitted photo
+     * @param content: message content.
+     */
+    override fun notifyClient(action : Action, transmission: Transmission, photo: Photo, content: String) {
         callbacks.beginBroadcast()
 
         for (i in 0 until callbacks.registeredCallbackCount) {
             val cb: IAidlServerServiceCallback = callbacks.getBroadcastItem(i)
             show(TAG, "Notifying: $content")
 
-            cb.sendStatusTransmissionPhoto(transmission, photo, content)
+            cb.sendStatusTransmissionPhoto(action, transmission, photo, content)
         }
-
         callbacks.finishBroadcast()
     }
 
@@ -127,6 +133,7 @@ class AidlServerServiceImpl(private val context: Context) : IAidlServerService.S
 
             when (action) {
                 Actions.NOTIFY_PHOTO_SENT, Actions.ERROR_SEND_PHOTO -> notifyClient(
+                    intent.getParcelableExtra(context.getString(R.string.action))!!,
                     transmission,
                     photo,
                     message
