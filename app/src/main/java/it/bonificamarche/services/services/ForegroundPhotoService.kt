@@ -23,6 +23,7 @@ class ForegroundPhotoService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
+        show(TAG, "Started!")
 
         val bundle = intent?.extras
         appName = bundle?.getString(getString(R.string.AppName))
@@ -37,6 +38,7 @@ class ForegroundPhotoService : Service() {
      * Create channel to notification.
      */
     private fun createChannelNotification() {
+        show(TAG, "Create channel notification")
 
         val notificationManager =
             getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -59,7 +61,7 @@ class ForegroundPhotoService : Service() {
      * Start service notice.
      */
     private fun startNoticeService() {
-        if (showLog) show(TAG, "Start notice service")
+        show(TAG, "Start notice service")
 
         val sound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
         val vibrate = longArrayOf(100, 200, 300, 400, 500, 400, 300, 200, 400)
@@ -100,7 +102,7 @@ class ForegroundPhotoService : Service() {
         const val CHANNEL_ID = "Foreground Service"
         private const val ON_GOING_NOTIFICATION_ID = 1
 
-        const val showLog = true
+        const val verbose = true
         const val TAG = "Foreground service"
     }
 }

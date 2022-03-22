@@ -1,4 +1,4 @@
 // Transmission.aidl
-package it.bonificamarche.services;
+package it.bonificamarche.services.aidl;
 
 parcelable Transmission;

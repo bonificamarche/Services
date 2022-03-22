@@ -6,8 +6,10 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
+        android:requestLegacyExternalStorage="true"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:installLocation="internalOnly"
@@ -40,9 +42,11 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </service>
+
         <service
-            android:name=".services.TimerService"
+            android:name=".services.MainService"
             android:exported="false" />
+
         <service
             android:name=".services.ForegroundPhotoService"
             android:exported="false" />

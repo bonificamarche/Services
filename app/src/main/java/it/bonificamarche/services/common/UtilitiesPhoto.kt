@@ -1,6 +1,7 @@
 package it.bonificamarche.services.common
 
 import java.io.File
+import java.util.*
 
 private val TAG = "Utilities Photo"
 
@@ -21,4 +22,13 @@ fun findPhotoToSend(appName: String): Int {
         }
     }
     return counterImg
+}
+
+/**
+ * Encode photo in base64.
+ * @param path: photo to encoded.
+ */
+fun encodePhoto(path: String): String {
+    val bytes = File(path).readBytes()
+    return Base64.getEncoder().encodeToString(bytes)
 }
