@@ -99,15 +99,6 @@ open class MainService : Service() {
                     }
                 }
 
-                val time = Calendar.getInstance().time
-                val diff = differenceInMinute(currentTime, time).toInt()
-                if (abs(diff) > DIFF_MINUTES_DEBUG) {
-                    currentTime = Calendar.getInstance().time
-                    startService(Intent(this@MainService, ForegroundDebugService::class.java))
-                } else if (abs(diff) > 100)
-                    stopService(Intent(this@MainService, ForegroundDebugService::class.java))
-
-
 //                if (flagForegroundServiceIsRunning) {
 //                    // TODO specificare condizione di stop service (connessione con aidl)
 //
