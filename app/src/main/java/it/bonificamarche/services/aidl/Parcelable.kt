@@ -1,7 +1,8 @@
-package it.bonificamarche.services
+package it.bonificamarche.services.aidl
 
 import android.os.Parcel
 import android.os.Parcelable
+import it.bonificamarche.services.services.Actions
 
 /**
  * Photo parcelable.
@@ -75,6 +76,33 @@ class Transmission(
         }
 
         override fun newArray(size: Int): Array<Transmission?> {
+            return arrayOfNulls(size)
+        }
+    }
+}
+
+class Action(
+    val action: Actions
+):Parcelable {
+
+    constructor(parcel: Parcel) : this(
+        parcel.readSerializable() as Actions
+    )
+
+    override fun writeToParcel(parcel: Parcel, flags: Int) {
+        parcel.writeSerializable(action)
+    }
+
+    override fun describeContents(): Int {
+        return 0
+    }
+
+    companion object CREATOR : Parcelable.Creator<Action> {
+        override fun createFromParcel(parcel: Parcel): Action {
+            return Action(parcel)
+        }
+
+        override fun newArray(size: Int): Array<Action?> {
             return arrayOfNulls(size)
         }
     }

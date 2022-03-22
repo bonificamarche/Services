@@ -11,9 +11,9 @@ import android.os.IBinder
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
-import it.bonificamarche.services.Photo
 import it.bonificamarche.services.R
-import it.bonificamarche.services.Transmission
+import it.bonificamarche.services.aidl.Photo
+import it.bonificamarche.services.aidl.Transmission
 import it.bonificamarche.services.common.*
 import java.io.File
 import java.util.*
@@ -99,7 +99,6 @@ open class MainService : Service() {
 
                 val time = Calendar.getInstance().time
                 val diff = differenceInMinute(currentTime, time).toInt()
-                show(TAG, "Diff is: $diff")
                 if (abs(diff) > DIFF_MINUTES_DEBUG) {
                     currentTime = Calendar.getInstance().time
                     startService(Intent(this@MainService, ForegroundDebugService::class.java))
