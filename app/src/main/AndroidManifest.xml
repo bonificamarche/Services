@@ -50,6 +50,10 @@
         <service
             android:name=".services.ForegroundPhotoService"
             android:exported="false" />
+
+        <service
+            android:name=".services.ForegroundDebugService"
+            android:exported="false" />
     </application>
 
 </manifest>

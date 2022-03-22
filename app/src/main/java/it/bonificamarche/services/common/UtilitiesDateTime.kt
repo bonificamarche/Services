@@ -69,3 +69,8 @@ fun compareDate(date1: String, date2: String): Boolean {
             formatDate1.monthValue == formatDate2.monthValue &&
             formatDate1.dayOfMonth == formatDate2.dayOfMonth
 }
+
+fun differenceInMinute(date1 : Date, date2 : Date): Long {
+    val diff = date1.time - date2.time
+    return  diff / 60
+}
