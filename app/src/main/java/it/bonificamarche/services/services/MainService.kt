@@ -11,7 +11,9 @@ import android.os.IBinder
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
+import it.bonificamarche.services.Actions
 import it.bonificamarche.services.R
+import it.bonificamarche.services.aidl.Action
 import it.bonificamarche.services.aidl.Photo
 import it.bonificamarche.services.aidl.Transmission
 import it.bonificamarche.services.common.*
@@ -311,7 +313,7 @@ open class MainService : Service() {
         message: String = ""
     ) {
         val intent = Intent(getString(R.string.communicationFromMainServiceToAidlServerService))
-        intent.putExtra(getString(R.string.action), action)
+        intent.putExtra(getString(R.string.action), Action(action))
         intent.putExtra(getString(R.string.message), message)
         intent.putExtra(getString(R.string.transmission), transmission)
         intent.putExtra(getString(R.string.photo), photo)
@@ -339,7 +341,7 @@ open class MainService : Service() {
         const val FOLDER_NAME_SERVER = "IT02532390412"
         const val CROP = "coltura"
         const val REAL_ESTATE = "Immobile"
-        const val UNKNOWN = "sconosciuto"
+        const val UNKNOWN = "Sconosciuto"
 
         // Logging
         const val TAG = "Main Service"

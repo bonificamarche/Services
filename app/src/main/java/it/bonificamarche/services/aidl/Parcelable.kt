@@ -2,7 +2,7 @@ package it.bonificamarche.services.aidl
 
 import android.os.Parcel
 import android.os.Parcelable
-import it.bonificamarche.services.services.Actions
+import it.bonificamarche.services.Actions
 
 /**
  * Photo parcelable.
@@ -81,6 +81,9 @@ class Transmission(
     }
 }
 
+/**
+ * Action parcelable.
+ */
 class Action(
     val action: Actions
 ):Parcelable {

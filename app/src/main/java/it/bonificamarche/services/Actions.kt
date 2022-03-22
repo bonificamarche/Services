@@ -1,4 +1,4 @@
-package it.bonificamarche.services.services
+package it.bonificamarche.services
 
 enum class Actions {
     START_SEND_PHOTO,

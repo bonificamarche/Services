@@ -7,7 +7,7 @@ import android.os.RemoteCallbackList
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import it.bonificamarche.services.*
 import it.bonificamarche.services.common.show
-import it.bonificamarche.services.services.Actions
+import it.bonificamarche.services.Actions
 import it.bonificamarche.services.services.MainService
 
 class AidlServerServiceImpl(private val context: Context) : IAidlServerService.Stub() {
@@ -123,7 +123,7 @@ class AidlServerServiceImpl(private val context: Context) : IAidlServerService.S
 
             val bundle = intent.extras
 
-            val action = intent.getSerializableExtra(context.getString(R.string.action)) as Actions
+            val action = intent.getParcelableExtra<Action>(context.getString(R.string.action))!!
             val message = bundle?.getString(context.getString(R.string.message))!!
             val transmission =
                 intent.getParcelableExtra<Transmission>(context.getString(R.string.transmission))!!
@@ -131,9 +131,9 @@ class AidlServerServiceImpl(private val context: Context) : IAidlServerService.S
 
             show(TAG, "[Main Service --> AIDL Server] Received Action: $action, message: $message")
 
-            when (action) {
+            when (action.action) {
                 Actions.NOTIFY_PHOTO_SENT, Actions.ERROR_SEND_PHOTO -> notifyClient(
-                    intent.getParcelableExtra(context.getString(R.string.action))!!,
+                    action,
                     transmission,
                     photo,
                     message
