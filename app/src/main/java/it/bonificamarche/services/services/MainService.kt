@@ -202,14 +202,14 @@ open class MainService : Service() {
     ) {
 
         try {
-            var  nameFile = photo.fullName!!.replace(".png", "").substring(1)
+            var nameFile = photo.fullName!!.replace(".png", "").substring(1)
             // TODO Check this when adds new labels photo
             val typeFile =
                 if (photo.name!!.contains(REAL_ESTATE, ignoreCase = true)) {
                     val splitting = nameFile.split("#")
                     if (splitting.size > 1) {
                         val id = splitting[0].split(REAL_ESTATE)
-                        if(id.size > 1)
+                        if (id.size > 1)
                             nameFile = id[1]
                     }
                     CROP
@@ -218,59 +218,63 @@ open class MainService : Service() {
             // Upload photo to the server
             if (verbose) show(TAG, "Start upload name: $nameFile, type: $typeFile")
 
-            apiService.uploadPhoto(
-                getString(R.string.kk),
-                getString(R.string.ks),
-                idUser.toString(),
-                typeFile,
-                nameFile,
-                encoded
-            )
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .retry { retryCount, _ -> retryCount < 3 }
-                .subscribe({ json ->
+            if (sendPhotoInRunning) {
+                apiService.uploadPhoto(
+                    getString(R.string.kk),
+                    getString(R.string.ks),
+                    idUser.toString(),
+                    typeFile,
+                    nameFile,
+                    encoded
+                )
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .retry { retryCount, _ -> retryCount < 3 }
+                    .subscribe({ json ->
 
-                    val nameFileServer = json.get("file").toString().replace("\"", "")
-                    if (verbose)
-                        show(
-                            TAG, "Result received: $nameFileServer!\nSend request to image resized."
-                        )
-
-                    // Start resizing
-                    if (verbose) show(TAG, "Start resizing...")
-
-                    apiServiceResizeImage.resizeImages(FOLDER_NAME_SERVER, nameFileServer)
-                        .subscribeOn(Schedulers.io())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .retry { retryCount, _ -> retryCount < 3 }
-                        .subscribe({
-
-                            if (verbose) show(TAG, "Resize completed!")
-                            transmission.photoTransmitted += 1
-
-                            // Notify clients
-                            sendMessageToAidlServerToNotifyPhoto(
-                                Actions.NOTIFY_PHOTO_SENT, transmission,
-                                photo, "Send photo: ${photo.name}"
+                        val nameFileServer = json.get("file").toString().replace("\"", "")
+                        if (verbose)
+                            show(
+                                TAG,
+                                "Result received: $nameFileServer!\nSend request to image resized."
                             )
-                        },
-                            { error ->
-                                show(TAG, "Error in upload photo: ${error.message}")
-                                sendMessageToAidlServerToNotifyPhoto(
-                                    Actions.ERROR_SEND_PHOTO,
-                                    transmission, photo, error.message!!
-                                )
 
-                            })
-                }, { error ->
-                    show(TAG, "Error in upload photo: ${error.message}")
-                    sendMessageToAidlServerToNotifyPhoto(
-                        Actions.ERROR_SEND_PHOTO,
-                        transmission, photo, error.message!!
-                    )
-                })
+                        // Start resizing
+                        if (verbose) show(TAG, "Start resizing...")
 
+                        if (sendPhotoInRunning) {
+                            apiServiceResizeImage.resizeImages(FOLDER_NAME_SERVER, nameFileServer)
+                                .subscribeOn(Schedulers.io())
+                                .observeOn(AndroidSchedulers.mainThread())
+                                .retry { retryCount, _ -> retryCount < 3 }
+                                .subscribe({
+
+                                    if (verbose) show(TAG, "Resize completed!")
+                                    transmission.photoTransmitted += 1
+
+                                    // Notify clients
+                                    sendMessageToAidlServerToNotifyPhoto(
+                                        Actions.NOTIFY_PHOTO_SENT, transmission,
+                                        photo, "Send photo: ${photo.name}"
+                                    )
+                                },
+                                    { error ->
+                                        show(TAG, "Error in upload photo: ${error.message}")
+                                        sendMessageToAidlServerToNotifyPhoto(
+                                            Actions.ERROR_SEND_PHOTO,
+                                            transmission, photo, error.message!!
+                                        )
+
+                                    })
+                        } else show(TAG, "[Transmission stopped]")
+                    }, { error ->
+                        show(TAG, "Error in upload photo: ${error.message}")
+                        sendMessageToAidlServerToNotifyPhoto(
+                            Actions.ERROR_SEND_PHOTO,
+                            transmission, photo, error.message!!
+                        )
+                    })
+            } else show(TAG, "[Transmission stopped]")
         } catch (error: Exception) {
             show(TAG, "Error in upload photo: ${error.message}")
             sendMessageToAidlServerToNotifyPhoto(
