@@ -174,6 +174,7 @@ open class MainService : Service() {
                 if (index == 0) sendPhotoInRunning = true   // Start transmission
 
                 if (sendPhotoInRunning) {
+
                     val photo = Photo(file.name, file.absolutePath)
                     if (verbose) show(TAG, "Encoding.....")
                     val encodedPhoto = encodePhoto(photo.fullName!!)
@@ -201,12 +202,16 @@ open class MainService : Service() {
     ) {
 
         try {
-            var nameFile = photo.fullName!!.replace(".png", "").substring(1)
+            var  nameFile = photo.fullName!!.replace(".png", "").substring(1)
             // TODO Check this when adds new labels photo
             val typeFile =
                 if (photo.name!!.contains(REAL_ESTATE, ignoreCase = true)) {
-                    val splitting = nameFile.split(REAL_ESTATE)
-                    if (splitting.size > 1) nameFile = splitting[1]
+                    val splitting = nameFile.split("#")
+                    if (splitting.size > 1) {
+                        val id = splitting[0].split(REAL_ESTATE)
+                        if(id.size > 1)
+                            nameFile = id[1]
+                    }
                     CROP
                 } else UNKNOWN
 
