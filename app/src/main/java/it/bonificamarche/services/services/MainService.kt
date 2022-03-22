@@ -17,6 +17,7 @@ import it.bonificamarche.services.Transmission
 import it.bonificamarche.services.common.*
 import java.io.File
 import java.util.*
+import kotlin.math.abs
 
 open class MainService : Service() {
 
@@ -24,16 +25,17 @@ open class MainService : Service() {
 
     // Asynchronous requests
     private val apiService by lazy {
-        ApiServices.create("https://webserv.bonificamarche.it")
+        IApiServices.create("https://webserv.bonificamarche.it")
     }
 
     private val apiServiceResizeImage by lazy {
-        ApiServices.create("https://cdn.bonificamarche.it")
+        IApiServices.create("https://cdn.bonificamarche.it")
     }
 
     // Timer
     private var timer: Timer? = null
     var currentDate: String = getParsedDate(getLocalDate())
+    var currentTime = Calendar.getInstance().time
 
     // Foreground photo
     private lateinit var foregroundPhotoService: ForegroundPhotoService
@@ -94,6 +96,16 @@ open class MainService : Service() {
                         }
                     }
                 }
+
+                val time = Calendar.getInstance().time
+                val diff = differenceInMinute(currentTime, time).toInt()
+                show(TAG, "Diff is: $diff")
+                if (abs(diff) > DIFF_MINUTES_DEBUG) {
+                    currentTime = Calendar.getInstance().time
+                    startService(Intent(this@MainService, ForegroundDebugService::class.java))
+                } else if (abs(diff) > 100)
+                    stopService(Intent(this@MainService, ForegroundDebugService::class.java))
+
 
 //                if (flagForegroundServiceIsRunning) {
 //                    // TODO specificare condizione di stop service (connessione con aidl)
@@ -193,7 +205,7 @@ open class MainService : Service() {
             val typeFile =
                 if (photo.name!!.contains(REAL_ESTATE, ignoreCase = true)) {
                     val splitting = nameFile.split(REAL_ESTATE)
-                    if(splitting.size > 1) nameFile = splitting[1]
+                    if (splitting.size > 1) nameFile = splitting[1]
                     CROP
                 } else UNKNOWN
 
@@ -228,8 +240,10 @@ open class MainService : Service() {
                         .retry { retryCount, _ -> retryCount < 3 }
                         .subscribe({
 
-                            if(verbose) show(TAG, "Resize completed!")
+                            if (verbose) show(TAG, "Resize completed!")
                             transmission.photoTransmitted += 1
+
+                            // Notify clients
                             sendMessageToAidlServerToNotifyPhoto(
                                 Actions.NOTIFY_PHOTO_SENT, transmission,
                                 photo, "Send photo: ${photo.name}"
@@ -250,6 +264,7 @@ open class MainService : Service() {
                         transmission, photo, error.message!!
                     )
                 })
+
         } catch (error: Exception) {
             show(TAG, "Error in upload photo: ${error.message}")
             sendMessageToAidlServerToNotifyPhoto(
@@ -310,9 +325,12 @@ open class MainService : Service() {
 
         private const val PERIOD = 1000L
 
-        // Notification Time
+        // Notification Photo Time
         private const val NOTICE_HOUR_PHOTO = 10
         private const val NOTICE_MINUTE_PHOTO = 8
+
+        // Notification Debug time
+        private const val DIFF_MINUTES_DEBUG = 200
 
         // App Name
         const val APP_NAME_COLTURE = "Colture"

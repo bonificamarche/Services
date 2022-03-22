@@ -9,7 +9,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.*
 import java.util.concurrent.TimeUnit
 
-interface ApiServices {
+interface IApiServices {
 
     /**
      * Upload photos.
@@ -41,7 +41,7 @@ interface ApiServices {
          *
          * @param baseUrl base url to make a request.
          */
-        fun create(baseUrl: String): ApiServices {
+        fun create(baseUrl: String): IApiServices {
 
             val okHttpClient = OkHttpClient.Builder()
                 .connectTimeout(5, TimeUnit.MINUTES)
@@ -56,7 +56,7 @@ interface ApiServices {
                 .client(okHttpClient)
                 .build()
 
-            return retrofit.create(ApiServices::class.java)
+            return retrofit.create(IApiServices::class.java)
         }
     }
 }
