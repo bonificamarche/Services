@@ -19,7 +19,6 @@ import it.bonificamarche.services.aidl.Transmission
 import it.bonificamarche.services.common.*
 import java.io.File
 import java.util.*
-import kotlin.math.abs
 
 open class MainService : Service() {
 
@@ -99,15 +98,6 @@ open class MainService : Service() {
                     }
                 }
 
-                val time = Calendar.getInstance().time
-                val diff = differenceInMinute(currentTime, time).toInt()
-                if (abs(diff) > DIFF_MINUTES_DEBUG) {
-                    currentTime = Calendar.getInstance().time
-                    startService(Intent(this@MainService, ForegroundDebugService::class.java))
-                } else if (abs(diff) > 100)
-                    stopService(Intent(this@MainService, ForegroundDebugService::class.java))
-
-
 //                if (flagForegroundServiceIsRunning) {
 //                    // TODO specificare condizione di stop service (connessione con aidl)
 //
@@ -180,7 +170,7 @@ open class MainService : Service() {
                     val encodedPhoto = encodePhoto(photo.fullName!!)
 
                     if (verbose) show(TAG, "Photo encoded! Start to upload.")
-                    uploadPhoto(idUser, encodedPhoto, transmission, photo)
+                    uploadPhoto(path, idUser, encodedPhoto, transmission, photo)
                 }
             }
         }
@@ -188,6 +178,7 @@ open class MainService : Service() {
 
     /**
      * Upload photo to the server.
+     * @param path: path to search for photos.
      * @param idUser: id user server to sent photo.
      * @param encoded: photo in base64 to upload.
      * @param transmission: status of the transmission.
@@ -195,6 +186,7 @@ open class MainService : Service() {
      */
     @SuppressLint("CheckResult")
     private fun uploadPhoto(
+        path: String,
         idUser: Int,
         encoded: String,
         transmission: Transmission,
@@ -205,15 +197,33 @@ open class MainService : Service() {
             var nameFile = photo.fullName!!.replace(".png", "").substring(1)
             // TODO Check this when adds new labels photo
             val typeFile =
-                if (photo.name!!.contains(REAL_ESTATE, ignoreCase = true)) {
-                    val splitting = nameFile.split("#")
-                    if (splitting.size > 1) {
-                        val id = splitting[0].split(REAL_ESTATE)
-                        if (id.size > 1)
-                            nameFile = id[1]
+                when {
+                    path.contains(APP_NAME_COLTURE, ignoreCase = true) -> {
+                        // Real estate photo
+                        val splitting = nameFile.split("#")
+                        if (splitting.size > 1) {
+                            val id = splitting[0].split(REAL_ESTATE)
+                            if (id.size > 1)
+                                nameFile = id[1]
+                        }
+                        CROP
                     }
-                    CROP
-                } else UNKNOWN
+                    path.contains(APP_NAME_IRRIGAZIONE, ignoreCase = true) -> {
+                        // Irrigation photo
+                        val type : String = if (photo.name!![0] == '1') POINT
+                        else READING
+
+                        val splitting = nameFile.split(APP_NAME_IRRIGAZIONE)
+                        if (splitting.size > 1) {
+                            nameFile = splitting[1].substring(1)
+
+                            val tempName = nameFile.split("#")
+                            nameFile = tempName[0].substring(1) + "#" + tempName[1]
+                        }
+                        type
+                    }
+                    else -> UNKNOWN
+                }
 
             // Upload photo to the server
             if (verbose) show(TAG, "Start upload name: $nameFile, type: $typeFile")
@@ -350,6 +360,8 @@ open class MainService : Service() {
         const val FOLDER_NAME_SERVER = "IT02532390412"
         const val CROP = "coltura"
         const val REAL_ESTATE = "Immobile"
+        const val POINT = "punto"
+        const val READING = "lettura"
         const val UNKNOWN = "Sconosciuto"
 
         // Logging
