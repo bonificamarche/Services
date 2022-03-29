@@ -197,20 +197,33 @@ open class MainService : Service() {
             var nameFile = photo.fullName!!.replace(".png", "").substring(1)
             // TODO Check this when adds new labels photo
             val typeFile =
-                if (path.contains(CROP, ignoreCase = true)) {
-                    // Real estate photo
-                    val splitting = nameFile.split("#")
-                    if (splitting.size > 1) {
-                        val id = splitting[0].split(REAL_ESTATE)
-                        if (id.size > 1)
-                            nameFile = id[1]
+                when {
+                    path.contains(APP_NAME_COLTURE, ignoreCase = true) -> {
+                        // Real estate photo
+                        val splitting = nameFile.split("#")
+                        if (splitting.size > 1) {
+                            val id = splitting[0].split(REAL_ESTATE)
+                            if (id.size > 1)
+                                nameFile = id[1]
+                        }
+                        CROP
                     }
-                    CROP
-                } else if (path.contains(IRRIGATION, ignoreCase = true)) {
-                    // Irrigation photo
-                    nameFile = nameFile.replace(IRRIGATION, "")
-                    if (photo.name!![0] == '1') POINT else READING
-                } else UNKNOWN
+                    path.contains(APP_NAME_IRRIGAZIONE, ignoreCase = true) -> {
+                        // Irrigation photo
+                        val type : String = if (photo.name!![0] == '1') POINT
+                        else READING
+
+                        val splitting = nameFile.split(APP_NAME_IRRIGAZIONE)
+                        if (splitting.size > 1) {
+                            nameFile = splitting[1].substring(1)
+
+                            val tempName = nameFile.split("#")
+                            nameFile = tempName[0].substring(1) + "#" + tempName[1]
+                        }
+                        type
+                    }
+                    else -> UNKNOWN
+                }
 
             // Upload photo to the server
             if (verbose) show(TAG, "Start upload name: $nameFile, type: $typeFile")
@@ -347,7 +360,6 @@ open class MainService : Service() {
         const val FOLDER_NAME_SERVER = "IT02532390412"
         const val CROP = "coltura"
         const val REAL_ESTATE = "Immobile"
-        const val IRRIGATION = "Irrigazione"
         const val POINT = "punto"
         const val READING = "lettura"
         const val UNKNOWN = "Sconosciuto"
