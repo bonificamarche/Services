@@ -19,7 +19,6 @@ import it.bonificamarche.services.aidl.Transmission
 import it.bonificamarche.services.common.*
 import java.io.File
 import java.util.*
-import kotlin.math.abs
 
 open class MainService : Service() {
 
@@ -171,7 +170,7 @@ open class MainService : Service() {
                     val encodedPhoto = encodePhoto(photo.fullName!!)
 
                     if (verbose) show(TAG, "Photo encoded! Start to upload.")
-                    uploadPhoto(idUser, encodedPhoto, transmission, photo)
+                    uploadPhoto(path, idUser, encodedPhoto, transmission, photo)
                 }
             }
         }
@@ -179,6 +178,7 @@ open class MainService : Service() {
 
     /**
      * Upload photo to the server.
+     * @param path: path to search for photos.
      * @param idUser: id user server to sent photo.
      * @param encoded: photo in base64 to upload.
      * @param transmission: status of the transmission.
@@ -186,6 +186,7 @@ open class MainService : Service() {
      */
     @SuppressLint("CheckResult")
     private fun uploadPhoto(
+        path: String,
         idUser: Int,
         encoded: String,
         transmission: Transmission,
@@ -196,7 +197,8 @@ open class MainService : Service() {
             var nameFile = photo.fullName!!.replace(".png", "").substring(1)
             // TODO Check this when adds new labels photo
             val typeFile =
-                if (photo.name!!.contains(REAL_ESTATE, ignoreCase = true)) {
+                if (path.contains(CROP, ignoreCase = true)) {
+                    // Real estate photo
                     val splitting = nameFile.split("#")
                     if (splitting.size > 1) {
                         val id = splitting[0].split(REAL_ESTATE)
@@ -204,6 +206,10 @@ open class MainService : Service() {
                             nameFile = id[1]
                     }
                     CROP
+                } else if (path.contains(IRRIGATION, ignoreCase = true)) {
+                    // Irrigation photo
+                    nameFile = nameFile.replace(IRRIGATION, "")
+                    if (photo.name!![0] == '1') POINT else READING
                 } else UNKNOWN
 
             // Upload photo to the server
@@ -341,6 +347,9 @@ open class MainService : Service() {
         const val FOLDER_NAME_SERVER = "IT02532390412"
         const val CROP = "coltura"
         const val REAL_ESTATE = "Immobile"
+        const val IRRIGATION = "Irrigazione"
+        const val POINT = "punto"
+        const val READING = "lettura"
         const val UNKNOWN = "Sconosciuto"
 
         // Logging
