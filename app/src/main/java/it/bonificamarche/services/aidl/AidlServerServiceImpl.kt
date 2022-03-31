@@ -140,6 +140,8 @@ class AidlServerServiceImpl(private val context: Context) : IAidlServerService.S
                         message
                     )
                 }
+
+                Actions.STOP_SEND_PHOTO -> {}
                 else -> throw Exception("Actions not implemented!")
             }
         }

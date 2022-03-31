@@ -236,7 +236,7 @@ class ForegroundStatusTransmissionPhotoService : Service() {
                                     )
 
                                     if (transmission.photoTransmitted == transmission.photoToBeTransmitted)
-                                        stopService()
+                                        stopService(Actions.STOP_SEND_PHOTO, transmission, photo)
                                 },
                                     { error ->
                                         show(TAG, "Error in upload photo: ${error.message}")
@@ -244,30 +244,40 @@ class ForegroundStatusTransmissionPhotoService : Service() {
                                             Actions.ERROR_SEND_PHOTO,
                                             transmission, photo, error.message!!
                                         )
-                                        stopService()
+                                        stopService(Actions.ERROR_SEND_PHOTO, transmission, photo, error.message!!)
                                     })
-                        } else show(TAG, "[Transmission stopped]")
-                    }, { error ->
+                        } else {
+                            show(TAG, "[Transmission stopped]")
+                            stopService(Actions.STOP_SEND_PHOTO, transmission, photo)
+                        }
+                    },
+                        { error ->
                         show(TAG, "Error in upload photo: ${error.message}")
                         sendMessageToAidlServerToNotifyPhoto(
                             Actions.ERROR_SEND_PHOTO,
                             transmission, photo, error.message!!
                         )
-                        stopService()
+                        stopService(Actions.ERROR_SEND_PHOTO, transmission, photo, error.message!!)
                     })
-            } else show(TAG, "[Transmission stopped]")
+
+            } else{
+                show(TAG, "[Transmission stopped]")
+                stopService(Actions.STOP_SEND_PHOTO, transmission, photo)
+            }
+
         } catch (error: Exception) {
             show(TAG, "Error in upload photo: ${error.message}")
             sendMessageToAidlServerToNotifyPhoto(
                 Actions.ERROR_SEND_PHOTO,
                 transmission, photo, error.message!!
             )
-            stopService()
+            stopService(Actions.ERROR_SEND_PHOTO, transmission, photo, error.message!!)
         }
     }
 
 
-    private fun stopService() {
+    private fun stopService(action: Actions, transmission: Transmission, photo: Photo, message : String = "") {
+        sendMessageToAidlServerToNotifyPhoto(action, transmission, photo, message)
         this.stopSelf()
         onDestroy()
     }
@@ -291,6 +301,8 @@ class ForegroundStatusTransmissionPhotoService : Service() {
                     show(TAG, "Updated flag sendPhotoInRunning...")
                     sendPhotoInRunning = false
                 }
+
+                Actions.START_SEND_PHOTO -> {}
                 else -> throw Exception("Actions not implemented!")
             }
         }

@@ -2,6 +2,7 @@ package it.bonificamarche.services
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import it.bonificamarche.services.common.show
@@ -15,9 +16,10 @@ class StartExternalApplication : AppCompatActivity() {
         val bundle: Bundle = intent.extras!!
         val packageApp = bundle.getString("package")
 
+        Log.e(TAG, packageApp.toString())
         try {
             val intent: Intent? = packageManager.getLaunchIntentForPackage(packageApp!!)
-            this.startActivity(intent)
+            startActivity(intent)
         } catch (e: Exception) {
             show(TAG, "Error: ${e.message}")
             MaterialAlertDialogBuilder(this)
@@ -29,6 +31,6 @@ class StartExternalApplication : AppCompatActivity() {
     }
 
     companion object {
-        const val TAG = "Start External Aplication"
+        const val TAG = "Start External Application"
     }
 }
