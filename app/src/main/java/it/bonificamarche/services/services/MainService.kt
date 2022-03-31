@@ -35,7 +35,8 @@ open class MainService : Service() {
 
     // Timer
     private var timer: Timer? = null
-    var currentDate: String = getParsedDate(getLocalDate())
+    var cropAppDate: String = getParsedDate(getLocalDate())
+    var irrigationAppDate: String = getParsedDate(getLocalDate())
     var currentTime = Calendar.getInstance().time
 
     // Foreground photo
@@ -91,27 +92,24 @@ open class MainService : Service() {
                 when (hour) {
                     NOTICE_HOUR_PHOTO -> {
                         when (minute) {
-                            CROP_NOTICE_MINUTE_PHOTO -> {
-                                checkNoticePhoto(CROP_APP_NAME)
+                            START_CROP_NOTICE_MINUTE_PHOTO -> {
+                                startCheckNoticePhoto(CROP_APP_NAME, cropAppDate)
                             }
 
-                            IRRIGATION_NOTICE_MINUTE_PHOTO -> {
-                                checkNoticePhoto(IRRIGATION_APP_NAME)
+                            STOP_CROP_NOTICE_MINUTE_PHOTO -> {
+                                cropAppDate = stopCheckNoticePhoto(cropAppDate)
+                            }
+
+                            START_IRRIGATION_NOTICE_MINUTE_PHOTO -> {
+                               startCheckNoticePhoto(IRRIGATION_APP_NAME, irrigationAppDate)
+                            }
+
+                            STOP_IRRIGATION_NOTICE_MINUTE_PHOTO -> {
+                                irrigationAppDate = stopCheckNoticePhoto(irrigationAppDate)
                             }
                         }
                     }
                 }
-
-//                if (flagForegroundServiceIsRunning) {
-//                    // TODO specificare condizione di stop service (connessione con aidl)
-//
-//                    show(TAG, "Foreground service stopping...")
-//                    stopService(Intent(this@TimerService, foregroundPhotoService::class.java))
-//
-//                    currentDate = addOneDay(currentDate)
-//                    if (showLog) show(TAG, "Reset parameters. New date is $currentDate")
-//                    flagForegroundServiceIsRunning = false
-//                }
             }
         }
 
@@ -121,16 +119,17 @@ open class MainService : Service() {
     }
 
     /**
-     * Check if the conditions are successfully to notice the notify.
+     * Check if the conditions are successfully to notify that there are photos to send.
+     * If true start the service.
      */
-    private fun checkNoticePhoto(appName: String) {
+    private fun startCheckNoticePhoto(appName: String, date: String) {
 
         val dateToCheck = getParsedDate(getLocalDate())
 
         val imgToSend = findPhotoToSend(appName)
         if (verbose) show(TAG, "[Check Photo] in progress... Found: $imgToSend")
 
-        if (compareDate(currentDate, dateToCheck)) {
+        if (compareDate(date, dateToCheck)) {
 
             if (imgToSend > 0) {
 
@@ -148,8 +147,26 @@ open class MainService : Service() {
             }
         } else if (verbose) show(
             TAG,
-            "[Check Photo] Wait new date... for check photo. Current is $currentDate and check is $dateToCheck"
+            "[Check Photo] Wait new date... for check photo. Current is $cropAppDate and check is $dateToCheck"
         )
+    }
+
+    /**
+     * Stop the foreground photo service.
+     */
+    private fun stopCheckNoticePhoto(date: String): String {
+
+        val newDate = addOneDay(date)
+
+        if (foregroundServiceIsRunning) {
+            if (verbose) show(TAG, "Foreground service stopping...")
+            stopService(Intent(this@MainService, foregroundPhotoService::class.java))
+
+            if (verbose) show(TAG, "Reset parameters. New date is $cropAppDate")
+            foregroundServiceIsRunning = false
+        }
+
+        return newDate
     }
 
     /**
@@ -352,8 +369,12 @@ open class MainService : Service() {
 
         // Notification Photo Time
         private const val NOTICE_HOUR_PHOTO = 8
-        private const val CROP_NOTICE_MINUTE_PHOTO = 24
-        private const val IRRIGATION_NOTICE_MINUTE_PHOTO = 25
+
+        private const val START_CROP_NOTICE_MINUTE_PHOTO = 46
+        private const val STOP_CROP_NOTICE_MINUTE_PHOTO = 47
+
+        private const val START_IRRIGATION_NOTICE_MINUTE_PHOTO = 48
+        private const val STOP_IRRIGATION_NOTICE_MINUTE_PHOTO = 49
 
         // Notification Debug time
         private const val DIFF_MINUTES_DEBUG = 200
