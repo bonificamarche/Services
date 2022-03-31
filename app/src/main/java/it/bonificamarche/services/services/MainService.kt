@@ -1,6 +1,5 @@
 package it.bonificamarche.services.services
 
-import android.annotation.SuppressLint
 import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -9,40 +8,25 @@ import android.content.IntentFilter
 import android.os.Binder
 import android.os.IBinder
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.schedulers.Schedulers
 import it.bonificamarche.services.Actions
 import it.bonificamarche.services.R
-import it.bonificamarche.services.aidl.Action
-import it.bonificamarche.services.aidl.Photo
-import it.bonificamarche.services.aidl.Transmission
 import it.bonificamarche.services.common.*
-import java.io.File
 import java.util.*
 
 open class MainService : Service() {
 
     private val binder = LocalBinder()
 
-    // Asynchronous requests
-    private val apiService by lazy {
-        IApiServices.create("https://webserv.bonificamarche.it")
-    }
-
-    private val apiServiceResizeImage by lazy {
-        IApiServices.create("https://cdn.bonificamarche.it")
-    }
-
     // Timer
     private var timer: Timer? = null
     var currentDate: String = getParsedDate(getLocalDate())
-    var currentTime = Calendar.getInstance().time
 
     // Foreground photo
-    private lateinit var foregroundPhotoService: ForegroundPhotoService
-    private var foregroundServiceIsRunning = false
+    private lateinit var foregroundCheckPhotoService: ForegroundCheckPhotoService
+    private var foregroundCheckPhotoServiceIsRunning = false
 
-    private var sendPhotoInRunning = false
+    // Foreground Status Transmission pPhoto
+    private lateinit var foregroundStatusTransmissionService: ForegroundStatusTransmissionPhotoService
 
     inner class LocalBinder : Binder() {
         fun getService(): MainService = this@MainService
@@ -55,19 +39,20 @@ open class MainService : Service() {
     override fun onCreate() {
         super.onCreate()
 
-        foregroundPhotoService = ForegroundPhotoService()
+        foregroundCheckPhotoService = ForegroundCheckPhotoService()
+        foregroundStatusTransmissionService = ForegroundStatusTransmissionPhotoService()
 
         // Local Broadcast receiver to communicate
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(
                 mainServiceReceiver,
-                IntentFilter(getString(R.string.communicationFromAidlServerServiceToMainService))
+                IntentFilter(getString(R.string.communicationFromAidlServerService))
             )
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        show(TAG, "Started!")
+        if (verbose) show(TAG, "Started!")
 
         startTimer()
         return START_STICKY
@@ -131,167 +116,20 @@ open class MainService : Service() {
 
                 if (verbose) show(TAG, "[Check Photo] There are photos to send.!")
 
-                if (!foregroundServiceIsRunning) {
-                    // Start services
-                    val intent = Intent(this, foregroundPhotoService::class.java)
+                if (!foregroundCheckPhotoServiceIsRunning) {
+                    // Start service
+                    val intent = Intent(this, foregroundCheckPhotoService::class.java)
                     intent.putExtra(getString(R.string.AppName), appName)
 
                     show(TAG, "[Check Photo] Foreground service starting...")
                     startService(intent)
-                    foregroundServiceIsRunning = true
+                    foregroundCheckPhotoServiceIsRunning = true
                 }
             }
         } else if (verbose) show(
             TAG,
             "[Check Photo] Wait new date... for check photo. Current is $currentDate and check is $dateToCheck"
         )
-    }
-
-    /**
-     * Send photo to remote server.
-     * @param idUser: id user server to sent photo.
-     * @param path: path of the root folder that contains the photos to be sent.
-     */
-    private fun sendPhotoToRemoteServer(idUser: Int, path: String) {
-
-        val folder = File(path)
-        if (folder.exists() && folder.isDirectory) {
-
-            val photoToTransmit = folder.listFiles()!!.size
-            val transmission = Transmission(path, photoToTransmit, 0)
-            folder.listFiles()?.forEachIndexed { index, file ->
-
-                if (index == 0) sendPhotoInRunning = true   // Start transmission
-
-                if (sendPhotoInRunning) {
-
-                    val photo = Photo(file.name, file.absolutePath)
-                    if (verbose) show(TAG, "Encoding.....")
-                    val encodedPhoto = encodePhoto(photo.fullName!!)
-
-                    if (verbose) show(TAG, "Photo encoded! Start to upload.")
-                    uploadPhoto(path, idUser, encodedPhoto, transmission, photo)
-                }
-            }
-        }
-    }
-
-    /**
-     * Upload photo to the server.
-     * @param path: path to search for photos.
-     * @param idUser: id user server to sent photo.
-     * @param encoded: photo in base64 to upload.
-     * @param transmission: status of the transmission.
-     * @param photo: current photo to be transmit.
-     */
-    @SuppressLint("CheckResult")
-    private fun uploadPhoto(
-        path: String,
-        idUser: Int,
-        encoded: String,
-        transmission: Transmission,
-        photo: Photo
-    ) {
-
-        try {
-            var nameFile = photo.fullName!!.replace(".png", "").substring(1)
-            // TODO Check this when adds new labels photo
-            val typeFile =
-                when {
-                    path.contains(APP_NAME_COLTURE, ignoreCase = true) -> {
-                        // Real estate photo
-                        val splitting = nameFile.split("#")
-                        if (splitting.size > 1) {
-                            val id = splitting[0].split(REAL_ESTATE)
-                            if (id.size > 1)
-                                nameFile = id[1]
-                        }
-                        CROP
-                    }
-                    path.contains(APP_NAME_IRRIGAZIONE, ignoreCase = true) -> {
-                        // Irrigation photo
-                        val type : String = if (photo.name!![0] == '1') POINT
-                        else READING
-
-                        val splitting = nameFile.split(APP_NAME_IRRIGAZIONE)
-                        if (splitting.size > 1) {
-                            nameFile = splitting[1].substring(1)
-
-                            val tempName = nameFile.split("#")
-                            nameFile = tempName[0].substring(1) + "#" + tempName[1]
-                        }
-                        type
-                    }
-                    else -> UNKNOWN
-                }
-
-            // Upload photo to the server
-            if (verbose) show(TAG, "Start upload name: $nameFile, type: $typeFile")
-
-            if (sendPhotoInRunning) {
-                apiService.uploadPhoto(
-                    getString(R.string.kk),
-                    getString(R.string.ks),
-                    idUser.toString(),
-                    typeFile,
-                    nameFile,
-                    encoded
-                )
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .retry { retryCount, _ -> retryCount < 3 }
-                    .subscribe({ json ->
-
-                        val nameFileServer = json.get("file").toString().replace("\"", "")
-                        if (verbose)
-                            show(
-                                TAG,
-                                "Result received: $nameFileServer!\nSend request to image resized."
-                            )
-
-                        // Start resizing
-                        if (verbose) show(TAG, "Start resizing...")
-
-                        if (sendPhotoInRunning) {
-                            apiServiceResizeImage.resizeImages(FOLDER_NAME_SERVER, nameFileServer)
-                                .subscribeOn(Schedulers.io())
-                                .observeOn(AndroidSchedulers.mainThread())
-                                .retry { retryCount, _ -> retryCount < 3 }
-                                .subscribe({
-
-                                    if (verbose) show(TAG, "Resize completed!")
-                                    transmission.photoTransmitted += 1
-
-                                    // Notify clients
-                                    sendMessageToAidlServerToNotifyPhoto(
-                                        Actions.NOTIFY_PHOTO_SENT, transmission,
-                                        photo, "Send photo: ${photo.name}"
-                                    )
-                                },
-                                    { error ->
-                                        show(TAG, "Error in upload photo: ${error.message}")
-                                        sendMessageToAidlServerToNotifyPhoto(
-                                            Actions.ERROR_SEND_PHOTO,
-                                            transmission, photo, error.message!!
-                                        )
-
-                                    })
-                        } else show(TAG, "[Transmission stopped]")
-                    }, { error ->
-                        show(TAG, "Error in upload photo: ${error.message}")
-                        sendMessageToAidlServerToNotifyPhoto(
-                            Actions.ERROR_SEND_PHOTO,
-                            transmission, photo, error.message!!
-                        )
-                    })
-            } else show(TAG, "[Transmission stopped]")
-        } catch (error: Exception) {
-            show(TAG, "Error in upload photo: ${error.message}")
-            sendMessageToAidlServerToNotifyPhoto(
-                Actions.ERROR_SEND_PHOTO,
-                transmission, photo, error.message!!
-            )
-        }
     }
 
     /**
@@ -308,37 +146,18 @@ open class MainService : Service() {
 
             when (action) {
                 Actions.START_SEND_PHOTO -> {
-                    sendPhotoToRemoteServer(idUser, message)
-                }
-                Actions.STOP_SEND_PHOTO -> {
-                    show(TAG, "Updated flag sendPhotoInRunning...")
-                    sendPhotoInRunning = false
+
+                    // Start service
+                    val intentToForeground =
+                        Intent(this@MainService, foregroundStatusTransmissionService::class.java)
+
+                    intentToForeground.putExtra(getString(R.string.id_user), idUser)
+                    intentToForeground.putExtra(getString(R.string.message), message)
+                    startService(intentToForeground)
                 }
                 else -> throw Exception("Actions not implemented!")
             }
         }
-    }
-
-    /**
-     * Call this function when the main service needs to communicate with the server service to notify.
-     * @param action: action to run.
-     * @param transmission: transmission status.
-     * @param photo: information on the last photo transmitted.
-     * @param message: content of the message.
-
-     */
-    private fun sendMessageToAidlServerToNotifyPhoto(
-        action: Actions, transmission: Transmission, photo: Photo,
-        message: String = ""
-    ) {
-        val intent = Intent(getString(R.string.communicationFromMainServiceToAidlServerService))
-        intent.putExtra(getString(R.string.action), Action(action))
-        intent.putExtra(getString(R.string.message), message)
-        intent.putExtra(getString(R.string.transmission), transmission)
-        intent.putExtra(getString(R.string.photo), photo)
-        show(TAG, "[Main Service --> AIDL Server]  Action: $action, message: $message")
-
-        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
     companion object {
@@ -353,19 +172,11 @@ open class MainService : Service() {
         private const val DIFF_MINUTES_DEBUG = 200
 
         // App Name
-        const val APP_NAME_COLTURE = "Colture"
-        const val APP_NAME_IRRIGAZIONE = "Irrigazione"
-
-        // Upload photo to remote server
-        const val FOLDER_NAME_SERVER = "IT02532390412"
-        const val CROP = "coltura"
-        const val REAL_ESTATE = "Immobile"
-        const val POINT = "punto"
-        const val READING = "lettura"
-        const val UNKNOWN = "Sconosciuto"
+        private const val APP_NAME_COLTURE = "Colture"
+        private const val APP_NAME_IRRIGAZIONE = "Irrigazione"
 
         // Logging
-        const val TAG = "Main Service"
-        const val verbose = true
+        private const val TAG = "Main Service"
+        private const val verbose = true
     }
 }

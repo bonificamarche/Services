@@ -48,7 +48,11 @@
             android:exported="false" />
 
         <service
-            android:name=".services.ForegroundPhotoService"
+            android:name=".services.ForegroundCheckPhotoService"
+            android:exported="false" />
+
+        <service
+            android:name=".services.ForegroundStatusTransmissionPhotoService"
             android:exported="false" />
     </application>
 
