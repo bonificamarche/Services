@@ -41,7 +41,8 @@ open class MainService : Service() {
 
     // Foreground photo
     private lateinit var foregroundPhotoService: ForegroundPhotoService
-    private var foregroundServiceIsRunning = false
+    private var cropForegroundServiceIsRunning = false
+    private var irrigationForegroundServiceIsRunning = false
 
     private var sendPhotoInRunning = false
 
@@ -101,7 +102,7 @@ open class MainService : Service() {
                             }
 
                             START_IRRIGATION_NOTICE_MINUTE_PHOTO -> {
-                               startCheckNoticePhoto(IRRIGATION_APP_NAME, irrigationAppDate)
+                                startCheckNoticePhoto(IRRIGATION_APP_NAME, irrigationAppDate)
                             }
 
                             STOP_IRRIGATION_NOTICE_MINUTE_PHOTO -> {
@@ -126,29 +127,39 @@ open class MainService : Service() {
 
         val dateToCheck = getParsedDate(getLocalDate())
 
+        var flag = if (appName == IRRIGATION_APP_NAME)
+            irrigationForegroundServiceIsRunning
+        else
+            cropForegroundServiceIsRunning
+
         val imgToSend = findPhotoToSend(appName)
         if (verbose) show(TAG, "[Check Photo] in progress... Found: $imgToSend")
 
-        if (compareDate(date, dateToCheck)) {
+        if (compareDate(date, dateToCheck) && !sendPhotoInRunning) {
 
             if (imgToSend > 0) {
 
                 if (verbose) show(TAG, "[Check Photo] There are photos to send.!")
 
-                if (!foregroundServiceIsRunning) {
+                if (!flag) {
                     // Start services
                     val intent = Intent(this, foregroundPhotoService::class.java)
                     intent.putExtra(getString(R.string.AppName), appName)
 
                     show(TAG, "[Check Photo] Foreground service starting...")
                     startService(intent)
-                    foregroundServiceIsRunning = true
+                    flag = true
                 }
             }
         } else if (verbose) show(
             TAG,
             "[Check Photo] Wait new date... for check photo. Current is $cropAppDate and check is $dateToCheck"
         )
+
+        if (appName == IRRIGATION_APP_NAME)
+            irrigationForegroundServiceIsRunning = flag
+        else
+            cropForegroundServiceIsRunning = flag
     }
 
     /**
@@ -158,12 +169,13 @@ open class MainService : Service() {
 
         val newDate = addOneDay(date)
 
-        if (foregroundServiceIsRunning) {
+        if (cropForegroundServiceIsRunning || irrigationForegroundServiceIsRunning) {
             if (verbose) show(TAG, "Foreground service stopping...")
             stopService(Intent(this@MainService, foregroundPhotoService::class.java))
 
-            if (verbose) show(TAG, "Reset parameters. New date is $cropAppDate")
-            foregroundServiceIsRunning = false
+            if (verbose) show(TAG, "Reset parameters. New date is $newDate")
+            cropForegroundServiceIsRunning = false
+            irrigationForegroundServiceIsRunning = false
         }
 
         return newDate
@@ -330,6 +342,12 @@ open class MainService : Service() {
 
             when (action) {
                 Actions.START_SEND_PHOTO -> {
+
+                    if (cropForegroundServiceIsRunning)
+                        stopCheckNoticePhoto(cropAppDate)
+                    else if (irrigationForegroundServiceIsRunning)
+                        stopCheckNoticePhoto(irrigationAppDate)
+
                     sendPhotoToRemoteServer(idUser, message)
                 }
                 Actions.STOP_SEND_PHOTO -> {
@@ -368,9 +386,9 @@ open class MainService : Service() {
         private const val PERIOD = 1000L
 
         // Notification Photo Time
-        private const val NOTICE_HOUR_PHOTO = 8
+        private const val NOTICE_HOUR_PHOTO = 11
 
-        private const val START_CROP_NOTICE_MINUTE_PHOTO = 46
+        private const val START_CROP_NOTICE_MINUTE_PHOTO = 8
         private const val STOP_CROP_NOTICE_MINUTE_PHOTO = 47
 
         private const val START_IRRIGATION_NOTICE_MINUTE_PHOTO = 48
