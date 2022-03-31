@@ -91,8 +91,12 @@ open class MainService : Service() {
                 when (hour) {
                     NOTICE_HOUR_PHOTO -> {
                         when (minute) {
-                            NOTICE_MINUTE_PHOTO -> {
-                                checkNoticePhoto(APP_NAME_COLTURE)
+                            CROP_NOTICE_MINUTE_PHOTO -> {
+                                checkNoticePhoto(CROP_APP_NAME)
+                            }
+
+                            IRRIGATION_NOTICE_MINUTE_PHOTO -> {
+                                checkNoticePhoto(IRRIGATION_APP_NAME)
                             }
                         }
                     }
@@ -122,6 +126,7 @@ open class MainService : Service() {
     private fun checkNoticePhoto(appName: String) {
 
         val dateToCheck = getParsedDate(getLocalDate())
+
         val imgToSend = findPhotoToSend(appName)
         if (verbose) show(TAG, "[Check Photo] in progress... Found: $imgToSend")
 
@@ -198,7 +203,7 @@ open class MainService : Service() {
             // TODO Check this when adds new labels photo
             val typeFile =
                 when {
-                    path.contains(APP_NAME_COLTURE, ignoreCase = true) -> {
+                    path.contains(CROP_APP_NAME, ignoreCase = true) -> {
                         // Real estate photo
                         val splitting = nameFile.split("#")
                         if (splitting.size > 1) {
@@ -208,12 +213,12 @@ open class MainService : Service() {
                         }
                         CROP
                     }
-                    path.contains(APP_NAME_IRRIGAZIONE, ignoreCase = true) -> {
+                    path.contains(IRRIGATION_APP_NAME, ignoreCase = true) -> {
                         // Irrigation photo
-                        val type : String = if (photo.name!![0] == '1') POINT
+                        val type: String = if (photo.name!![0] == '1') POINT
                         else READING
 
-                        val splitting = nameFile.split(APP_NAME_IRRIGAZIONE)
+                        val splitting = nameFile.split(IRRIGATION_APP_NAME)
                         if (splitting.size > 1) {
                             nameFile = splitting[1].substring(1)
 
@@ -346,15 +351,16 @@ open class MainService : Service() {
         private const val PERIOD = 1000L
 
         // Notification Photo Time
-        private const val NOTICE_HOUR_PHOTO = 10
-        private const val NOTICE_MINUTE_PHOTO = 8
+        private const val NOTICE_HOUR_PHOTO = 8
+        private const val CROP_NOTICE_MINUTE_PHOTO = 24
+        private const val IRRIGATION_NOTICE_MINUTE_PHOTO = 25
 
         // Notification Debug time
         private const val DIFF_MINUTES_DEBUG = 200
 
         // App Name
-        const val APP_NAME_COLTURE = "Colture"
-        const val APP_NAME_IRRIGAZIONE = "Irrigazione"
+        const val CROP_APP_NAME = "Colture"
+        const val IRRIGATION_APP_NAME = "Irrigazione"
 
         // Upload photo to remote server
         const val FOLDER_NAME_SERVER = "IT02532390412"
