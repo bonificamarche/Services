@@ -13,7 +13,7 @@ import it.bonificamarche.services.common.show
 import java.util.*
 
 
-class ForegroundPhotoService : Service() {
+class ForegroundCheckPhotoService : Service() {
 
     private var appName : String? = null
 

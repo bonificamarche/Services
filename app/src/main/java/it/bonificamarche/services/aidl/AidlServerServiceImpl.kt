@@ -33,7 +33,7 @@ class AidlServerServiceImpl(private val context: Context) : IAidlServerService.S
         LocalBroadcastManager.getInstance(context)
             .registerReceiver(
                 aidlServerReceiver,
-                IntentFilter(context.getString(R.string.communicationFromMainServiceToAidlServerService))
+                IntentFilter(context.getString(R.string.communicationForegroundSendPhotoToAidlServerService))
             )
     }
 
@@ -150,7 +150,7 @@ class AidlServerServiceImpl(private val context: Context) : IAidlServerService.S
      */
     private fun sendMessageToMainService(action: Actions, message: String = "", id: Int = 0) {
         val intent =
-            Intent(context.getString(R.string.communicationFromAidlServerServiceToMainService))
+            Intent(context.getString(R.string.communicationFromAidlServerService))
         intent.putExtra(context.getString(R.string.action), action)
         intent.putExtra(context.getString(R.string.message), message)
         intent.putExtra(context.getString(R.string.id_user), id)
