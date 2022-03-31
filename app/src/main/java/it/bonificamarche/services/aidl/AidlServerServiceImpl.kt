@@ -33,7 +33,7 @@ class AidlServerServiceImpl(private val context: Context) : IAidlServerService.S
         LocalBroadcastManager.getInstance(context)
             .registerReceiver(
                 aidlServerReceiver,
-                IntentFilter(context.getString(R.string.communicationForegroundSendPhotoToAidlServerService))
+                IntentFilter(context.getString(R.string.communicationForegroundSendPhoto))
             )
     }
 
@@ -129,15 +129,17 @@ class AidlServerServiceImpl(private val context: Context) : IAidlServerService.S
                 intent.getParcelableExtra<Transmission>(context.getString(R.string.transmission))!!
             val photo = intent.getParcelableExtra<Photo>(context.getString(R.string.photo))!!
 
-            show(TAG, "[Main Service --> AIDL Server] Received Action: $action, message: $message")
+            show(TAG, "[Foreground --> AIDL Server] Received Action: $action, message: $message")
 
             when (action.action) {
-                Actions.NOTIFY_PHOTO_SENT, Actions.ERROR_SEND_PHOTO -> notifyClient(
-                    action,
-                    transmission,
-                    photo,
-                    message
-                )
+                Actions.NOTIFY_PHOTO_SENT, Actions.ERROR_SEND_PHOTO -> {
+                    notifyClient(
+                        action,
+                        transmission,
+                        photo,
+                        message
+                    )
+                }
                 else -> throw Exception("Actions not implemented!")
             }
         }

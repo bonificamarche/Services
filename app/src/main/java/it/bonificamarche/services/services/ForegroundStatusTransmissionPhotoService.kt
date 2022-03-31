@@ -308,7 +308,7 @@ class ForegroundStatusTransmissionPhotoService : Service() {
         action: Actions, transmission: Transmission, photo: Photo,
         message: String = ""
     ) {
-        val intent = Intent(getString(R.string.communicationForegroundSendPhotoToAidlServerService))
+        val intent = Intent(getString(R.string.communicationForegroundSendPhoto))
         intent.putExtra(getString(R.string.action), Action(action))
         intent.putExtra(getString(R.string.message), message)
         intent.putExtra(getString(R.string.transmission), transmission)

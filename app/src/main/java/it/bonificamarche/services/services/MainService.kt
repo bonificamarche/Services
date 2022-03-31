@@ -10,6 +10,10 @@ import android.os.IBinder
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import it.bonificamarche.services.Actions
 import it.bonificamarche.services.R
+import it.bonificamarche.services.aidl.Action
+import it.bonificamarche.services.aidl.AidlServerServiceImpl
+import it.bonificamarche.services.aidl.Photo
+import it.bonificamarche.services.aidl.Transmission
 import it.bonificamarche.services.common.*
 import java.util.*
 
@@ -45,8 +49,14 @@ open class MainService : Service() {
         // Local Broadcast receiver to communicate
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(
-                mainServiceReceiver,
+                mainServiceReceiverFromAidl,
                 IntentFilter(getString(R.string.communicationFromAidlServerService))
+            )
+
+        LocalBroadcastManager.getInstance(this)
+            .registerReceiver(
+                mainServiceReceiverFromForeground,
+                IntentFilter(getString(R.string.communicationForegroundSendPhoto))
             )
     }
 
@@ -135,7 +145,7 @@ open class MainService : Service() {
     /**
      * Local receiver to communicate from aidl server service to main service.
      */
-    private val mainServiceReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+    private val mainServiceReceiverFromAidl: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val bundle = intent.extras!!
             val action = intent.getSerializableExtra(context.getString(R.string.action)) as Actions
@@ -154,6 +164,32 @@ open class MainService : Service() {
                     intentToForeground.putExtra(getString(R.string.id_user), idUser)
                     intentToForeground.putExtra(getString(R.string.message), message)
                     startService(intentToForeground)
+                    sendPhotoInRunning = true
+                }
+
+                Actions.STOP_SEND_PHOTO -> {
+                    show(TAG, "Updated flag sendPhotoInRunning...")
+                    sendPhotoInRunning = false
+                }
+                else -> throw Exception("Actions not implemented!")
+            }
+        }
+    }
+
+    /**
+     * Local receiver to communicate from foreground service to main service.
+     */
+    private val mainServiceReceiverFromForeground: BroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+
+            val action = intent.getParcelableExtra<Action>(context.getString(R.string.action))!!
+
+            show(AidlServerServiceImpl.TAG, "[Foreground --> Main Service] Received Action: $action")
+
+            when (action.action) {
+                Actions.ERROR_SEND_PHOTO -> {
+                    show(TAG, "Updated flag sendPhotoInRunning...")
+                    sendPhotoInRunning = false
                 }
                 else -> throw Exception("Actions not implemented!")
             }
@@ -178,5 +214,8 @@ open class MainService : Service() {
         // Logging
         private const val TAG = "Main Service"
         private const val verbose = true
+
+        // Manage service
+        private var sendPhotoInRunning = false
     }
 }
